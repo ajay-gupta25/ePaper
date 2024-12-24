@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetch Specific Images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        img {
+            max-width: 100%;
+            /* margin: 10px; */
+        }
+        .loading {
+            font-size: 18px;
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fetch Images with Specific Classes</h1>
+    <p>Click the button to fetch images from the server and display them below.</p>
+    <button id="fetchImages">Fetch Images</button>
+    <!-- <button id="next">Next</button>
+    <button id="prev">Prev</button> -->
+    <div id="main" style="display:none;"></div>
+    <div id="district" style="display:none;"></div>
+    <div id="magazines" style="display:none;"></div>
+
+    <script>
+        var today = new Date();
+        var currentPage = 1; // Track the current page
+        const main = document.getElementById('main');
+        const district = document.getElementById('district');
+        const magazines = document.getElementById('magazines');
+
+        // Format date in "YYYY-MM-DD"
+        var formattedDate = today.toISOString().split('T')[0];
+        console.log('Formatted date:', formattedDate);
+        for (let index = 1; index < 20; index++) {
+            const mainText = document.createElement('b');
+            mainText.innerHTML = "Page "+index;
+            mainText.id = "mainText-"+index;
+            mainText.style = "text-align: center";
+            const mainImg = document.createElement('img');
+            mainImg.id = "mainImg-"+index;
+            mainImg.alt = 'Fetched Image';
+            main.appendChild(mainText);
+            main.appendChild(mainImg);
+
+            const districtText = document.createElement('b');
+            districtText.innerHTML = "Page "+index;
+            districtText.id = "districtText-"+index;
+            districtText.style = "text-align: center";
+            const districtImg = document.createElement('img');
+            districtImg.id = "districtImg-"+index;
+            districtImg.alt = 'Fetched Image';
+
+            district.appendChild(districtText);
+            district.appendChild(districtImg);
+
+            const magazinesText = document.createElement('b');
+            magazinesText.innerHTML = "Page "+index;
+            magazinesText.id = "magazinesText-"+index;
+            magazinesText.style = "text-align: center";
+            const magazinesImg = document.createElement('img');
+            magazinesImg.id = "magazinesImg-"+index;
+            magazinesImg.alt = 'Fetched Image';
+
+            magazines.appendChild(magazinesText);
+            magazines.appendChild(magazinesImg);
+        }
+        
+        onloadScript();
+        async function onloadScript() {
+            await loadPages('kheda-anand', 10, 'district');
+            await loadPages('ahmedabad', 20, 'main');
+        }
+        // loadPages('kheda-anand', 10, 'magazines');
+
+
+        async function fetchData(i, title, type) {
+            // output.innerHTML = '<p class="loading">Fetching images...</p>';
+
+            try {
+                var im = document.getElementById(type+'Img-'+i);
+                var t = document.getElementById(type+'Text-'+i);
+                im.style = "display: none;"
+                t.style = "display: none;"
+                // Construct the URL with the query parameters
+                const url = `http://localhost:3000/fetch-images?title=${encodeURIComponent(title)}&date=${encodeURIComponent(formattedDate)}&number=${encodeURIComponent(i)}`;
+
+                // Make a request to the backend
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch images. Status: ${response.status}`);
+                }
+
+                // Parse JSON response
+                const images = await response.json();
+                console.log('Server response:', images);
+
+                // Clear output before appending new content
+                // output.innerHTML = '';
+
+                // Check if there are images in the response
+                if (!Array.isArray(images) || images.length === 0) {
+                    // output.innerHTML = '<p>No images found.</p>';
+                    return;
+                }
+
+                // Dynamically create image elements and append them
+                images.forEach((imgSrc) => {
+                    // const img = document.createElement('img');
+                    // img.src = imgSrc;
+                    // img.alt = 'Fetched Image';
+                    // output.appendChild(img);
+                    
+                    im.src = imgSrc;
+                    im.style = "text-align: center;display: block;"
+                    t.style = "text-align: center;display: block;"
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                // output.innerHTML = '<p>Error fetching images. Check the console for details.</p>';
+            }
+        }
+
+        function loadPages(title, pageCount, type) {
+            // currentPage = 1; // Reset to page 1 when "Fetch Images" is clicked
+            for (let index = 1; index < 20; index++) {
+                setTimeout(async () => {
+                    currentPage = index;
+                    await fetchData(index, title, type);
+                    console.log('currentPage:', currentPage, type);
+                    if (index == 5) {
+                        main.style = 'display:block;';
+                        district.style = 'display:block;';
+                        magazines.style = 'display:block;';
+                    }
+                }, 500*index);
+            }
+        }
+    </script>
+</body>
+</html>

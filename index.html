@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fetch Specific Images</title>
+    <title>E-Paper</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,9 +20,9 @@
     </style>
 </head>
 <body>
-    <h1>Fetch Images with Specific Classes</h1>
-    <p>Click the button to fetch images from the server and display them below.</p>
-    <button id="fetchImages">Fetch Images</button>
+    <h1>eNews</h1>
+    <!-- <p>Click the button to fetch images from the server and display them below.</p> -->
+    <!-- <button id="fetchImages">Fetch Images</button> -->
     <!-- <button id="next">Next</button>
     <button id="prev">Prev</button> -->
     <div id="main" style="display:none;"></div>
@@ -90,7 +90,8 @@
                 im.style = "display: none;"
                 t.style = "display: none;"
                 // Construct the URL with the query parameters
-                const url = `http://localhost:3000/fetch-images?title=${encodeURIComponent(title)}&date=${encodeURIComponent(formattedDate)}&number=${encodeURIComponent(i)}`;
+                // const url = `http://localhost:3000/fetch-images?title=${encodeURIComponent(title)}&date=${encodeURIComponent(formattedDate)}&number=${encodeURIComponent(i)}`;
+                const url = `https://epaper-3q7v.onrender.com/fetch-images?title=${encodeURIComponent(title)}&date=${encodeURIComponent(formattedDate)}&number=${encodeURIComponent(i)}`;
 
                 // Make a request to the backend
                 const response = await fetch(url);

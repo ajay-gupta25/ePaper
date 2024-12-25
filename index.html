@@ -20,6 +20,48 @@
         .heading {
             text-align: center;
         }
+                
+        .card {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+        background-color: #fff;
+        }
+
+        .card-image {
+        /* width: 300px; */
+        height: 100vw;
+        }
+
+        .card-image > img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        }
+
+        .card-image > #image {
+        width: 100%;
+        height: 100vw;
+        border-radius: 0.5rem;
+        }
+
+        .skeleton-loader {
+            animation: skeleton-loader 1s steps(1000) infinite;
+            background: linear-gradient(65deg, #eaeaea 0%, #eaeaea 40%, #ffffff 50%, #eaeaea 75%, #eaeaea 100%);
+            background-size: 100vw 100vw;
+            background-position: 0 0, 0 0, 0 0, 0 0;
+        }
+
+        @keyframes skeleton-loader {
+            0% {
+                background-position: 0 0, 0 0, 0 0, 0 0;
+            }
+            100% {
+                background-position: -500px 0, -500px -200px, 0 -200px, 500px 0;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -28,7 +70,7 @@
         <marquee behavior="scroll" bgcolor="#252424" loop="-1">
             <i>
                 <font color="#efefef">
-                    <strong>Today's date is :<span id="time">25/12/2024, 07:18:15</span></strong>  
+                    <strong>Today's date : <span id="time">25/12/2024, 07:18:15</span></strong>  
                 </font>
             </i>
         </marquee>
@@ -39,6 +81,7 @@
     <!-- <button id="fetchImages">Fetch Images</button> -->
     <!-- <button id="next">Next</button>
     <button id="prev">Prev</button> -->
+    <div id="skeleton"></div>
     <div id="main" style="display:none;"></div>
     <div id="district" style="display:none;">
         <div style="display: flex;justify-content: space-around;"><h3>Anand-Kheda District</h3><h3>આણંદ ખેડા જિલ્લો        </h3></div>
@@ -48,9 +91,15 @@
     </div>
 
     <script>
+        const skeleton = document.getElementById('skeleton');
+        for (let index = 1; index < 20; index++) {
+            skeleton.innerHTML += '<div class="card"><div class="card-image"><div id="image" class="skeleton-loader"></div></div></div>';
+        }
+
         var today = new Date();
         var day = today.getUTCDay();
-        document.getElementById('time').innerHTML=today.toDateString();
+        const cardContainer = document.getElementsByClassName("card");
+        // document.getElementById('time').innerHTML=today.toDateString();
         console.log('day:', day);
         var magazinesList = ['ravipurti', '', 'sahiyar', 'shatdal', 'dharmalok', 'chitralok', 'zagmag', '']; // 0 - 6 : Sunday - Saturday
         var currentPage = 1; // Track the current page
@@ -65,7 +114,7 @@
             const mainText = document.createElement('b');
             mainText.innerHTML = "Page "+index;
             mainText.id = "mainText-"+index;
-            mainText.style = "text-align: center;margin-bottom: -25px;position: relative;";
+            // mainText.style = "text-align: center;margin-bottom: -25px;position: relative;";
             const mainImg = document.createElement('img');
             mainImg.id = "mainImg-"+index;
             mainImg.alt = 'Fetched Image';
@@ -75,7 +124,7 @@
             const districtText = document.createElement('b');
             districtText.innerHTML = "Page "+index;
             districtText.id = "districtText-"+index;
-            districtText.style = "text-align: center";
+            // districtText.style = "text-align: center";
             const districtImg = document.createElement('img');
             districtImg.id = "districtImg-"+index;
             districtImg.alt = 'Fetched Image';
@@ -86,7 +135,7 @@
             const magazinesText = document.createElement('b');
             magazinesText.innerHTML = "Page "+index;
             magazinesText.id = "magazinesText-"+index;
-            magazinesText.style = "text-align: center";
+            // magazinesText.style = "text-align: center";
             const magazinesImg = document.createElement('img');
             magazinesImg.id = "magazinesImg-"+index;
             magazinesImg.alt = 'Fetched Image';
@@ -97,8 +146,8 @@
         
 
         function updateDateTime() {
-            var d = new Date()
-            document.getElementById('time').innerHTML=d.toLocaleString();
+            var d = new Date().toString()
+            document.getElementById('time').innerHTML=d.substring(0,24);
         }
         setInterval(updateDateTime, 1000);
 
@@ -154,7 +203,7 @@
                     
                     im.src = imgSrc;
                     im.style = "text-align: center;display: block;"
-                    t.style = "text-align: center;margin-bottom: -25px;position: relative;display: block;"
+                    t.style = "text-align: center;margin-bottom: -15px;position: relative;display: block;"
                 });
             } catch (error) {
                 console.error('Error:', error);
@@ -170,6 +219,7 @@
                     await fetchData(index, title, type);
                     console.log('currentPage:', currentPage, type);
                     if (index == 5) {
+                        document.querySelectorAll('.card').forEach(e => e.remove());
                         main.style = 'display:block;';
                         district.style = 'display:block;';
                         magazines.style = 'display:block;';

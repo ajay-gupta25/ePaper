@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 5px;
         }
         img {
             max-width: 100%;
@@ -17,20 +17,42 @@
             font-size: 18px;
             color: blue;
         }
+        .heading {
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <h1>eNews</h1>
+    <!-- <div style="text-align: right;margin-bottom: -30px;">24 Dec 2024, Tuesday</div> -->
+    <div style="text-align: center;background: #252424;padding: 12px;margin: -5px -5px 10px -5px;">
+        <marquee behavior="scroll" bgcolor="#252424" loop="-1">
+            <i>
+                <font color="#efefef">
+                    <strong>Today's date is :<span id="time">25/12/2024, 07:18:15</span></strong>  
+                </font>
+            </i>
+        </marquee>
+        <img src="https://www.gujaratsamachar.com/assets/footer-logo.png">
+    </div>
+    <!-- <h1 class="heading">News Paper</h1> -->
     <!-- <p>Click the button to fetch images from the server and display them below.</p> -->
     <!-- <button id="fetchImages">Fetch Images</button> -->
     <!-- <button id="next">Next</button>
     <button id="prev">Prev</button> -->
     <div id="main" style="display:none;"></div>
-    <div id="district" style="display:none;"></div>
-    <div id="magazines" style="display:none;"></div>
+    <div id="district" style="display:none;">
+        <div style="display: flex;justify-content: space-around;"><h3>Anand-Kheda District</h3><h3>આણંદ ખેડા જિલ્લો        </h3></div>
+    </div>
+    <div id="magazines" style="display:none;">
+        <div style="display: flex;justify-content: space-around;"><h3>Magazines</h3><h3 id="magzName" style="text-transform: capitalize;"></h3></div>
+    </div>
 
     <script>
         var today = new Date();
+        var day = today.getUTCDay();
+        document.getElementById('time').innerHTML=today.toDateString();
+        console.log('day:', day);
+        var magazinesList = ['ravipurti', '', 'sahiyar', 'shatdal', 'dharmalok', 'chitralok', 'zagmag', '']; // 0 - 6 : Sunday - Saturday
         var currentPage = 1; // Track the current page
         const main = document.getElementById('main');
         const district = document.getElementById('district');
@@ -43,7 +65,7 @@
             const mainText = document.createElement('b');
             mainText.innerHTML = "Page "+index;
             mainText.id = "mainText-"+index;
-            mainText.style = "text-align: center";
+            mainText.style = "text-align: center;margin-bottom: -25px;position: relative;";
             const mainImg = document.createElement('img');
             mainImg.id = "mainImg-"+index;
             mainImg.alt = 'Fetched Image';
@@ -73,10 +95,21 @@
             magazines.appendChild(magazinesImg);
         }
         
+
+        function updateDateTime() {
+            var d = new Date()
+            document.getElementById('time').innerHTML=d.toLocaleString();
+        }
+        setInterval(updateDateTime, 1000);
+
         onloadScript();
         async function onloadScript() {
-            await loadPages('kheda-anand', 10, 'district');
             await loadPages('ahmedabad', 20, 'main');
+            await loadPages('kheda-anand', 10, 'district');
+            if (magazinesList[day]) {
+                document.getElementById('magzName').innerHTML = magazinesList[day];
+                await loadPages(magazinesList[day], 10, 'magazines');
+            } 
         }
         // loadPages('kheda-anand', 10, 'magazines');
 
@@ -121,7 +154,7 @@
                     
                     im.src = imgSrc;
                     im.style = "text-align: center;display: block;"
-                    t.style = "text-align: center;display: block;"
+                    t.style = "text-align: center;margin-bottom: -25px;position: relative;display: block;"
                 });
             } catch (error) {
                 console.error('Error:', error);

@@ -65,7 +65,6 @@
     </style>
 </head>
 <body>
-    <!-- <div style="text-align: right;margin-bottom: -30px;">24 Dec 2024, Tuesday</div> -->
     <div style="text-align: center;background: #252424;padding: 12px;margin: -5px -5px 10px -5px;">
         <marquee behavior="scroll" bgcolor="#252424" loop="-1">
             <i>
@@ -76,11 +75,6 @@
         </marquee>
         <img src="https://www.gujaratsamachar.com/assets/footer-logo.png">
     </div>
-    <!-- <h1 class="heading">News Paper</h1> -->
-    <!-- <p>Click the button to fetch images from the server and display them below.</p> -->
-    <!-- <button id="fetchImages">Fetch Images</button> -->
-    <!-- <button id="next">Next</button>
-    <button id="prev">Prev</button> -->
     <div id="skeleton"></div>
     <div id="main" style="display:none;"></div>
     <div id="district" style="display:none;">
@@ -91,6 +85,7 @@
     </div>
 
     <script>
+         window.onbeforeunload = function () {return "";}
         const skeleton = document.getElementById('skeleton');
         for (let index = 1; index < 20; index++) {
             skeleton.innerHTML += '<div class="card"><div class="card-image"><div id="image" class="skeleton-loader"></div></div></div>';
@@ -99,7 +94,6 @@
         var today = new Date();
         var day = today.getUTCDay();
         const cardContainer = document.getElementsByClassName("card");
-        // document.getElementById('time').innerHTML=today.toDateString();
         console.log('day:', day);
         var magazinesList = ['ravipurti', '', 'sahiyar', 'shatdal', 'dharmalok', 'chitralok', 'zagmag', '']; // 0 - 6 : Sunday - Saturday
         var currentPage = 1; // Track the current page
@@ -107,14 +101,12 @@
         const district = document.getElementById('district');
         const magazines = document.getElementById('magazines');
 
-        // Format date in "YYYY-MM-DD"
         var formattedDate = today.toISOString().split('T')[0];
         console.log('Formatted date:', formattedDate);
         for (let index = 1; index < 20; index++) {
             const mainText = document.createElement('b');
             mainText.innerHTML = "Page "+index;
             mainText.id = "mainText-"+index;
-            // mainText.style = "text-align: center;margin-bottom: -25px;position: relative;";
             const mainImg = document.createElement('img');
             mainImg.id = "mainImg-"+index;
             mainImg.alt = 'Fetched Image';
@@ -124,7 +116,6 @@
             const districtText = document.createElement('b');
             districtText.innerHTML = "Page "+index;
             districtText.id = "districtText-"+index;
-            // districtText.style = "text-align: center";
             const districtImg = document.createElement('img');
             districtImg.id = "districtImg-"+index;
             districtImg.alt = 'Fetched Image';
@@ -135,7 +126,6 @@
             const magazinesText = document.createElement('b');
             magazinesText.innerHTML = "Page "+index;
             magazinesText.id = "magazinesText-"+index;
-            // magazinesText.style = "text-align: center";
             const magazinesImg = document.createElement('img');
             magazinesImg.id = "magazinesImg-"+index;
             magazinesImg.alt = 'Fetched Image';
@@ -160,12 +150,8 @@
                 await loadPages(magazinesList[day], 10, 'magazines');
             } 
         }
-        // loadPages('kheda-anand', 10, 'magazines');
-
 
         async function fetchData(i, title, type) {
-            // output.innerHTML = '<p class="loading">Fetching images...</p>';
-
             try {
                 var im = document.getElementById(type+'Img-'+i);
                 var t = document.getElementById(type+'Text-'+i);
@@ -185,9 +171,6 @@
                 const images = await response.json();
                 console.log('Server response:', images);
 
-                // Clear output before appending new content
-                // output.innerHTML = '';
-
                 // Check if there are images in the response
                 if (!Array.isArray(images) || images.length === 0) {
                     // output.innerHTML = '<p>No images found.</p>';
@@ -196,28 +179,22 @@
 
                 // Dynamically create image elements and append them
                 images.forEach((imgSrc) => {
-                    // const img = document.createElement('img');
-                    // img.src = imgSrc;
-                    // img.alt = 'Fetched Image';
-                    // output.appendChild(img);
-                    
                     im.src = imgSrc;
                     im.style = "text-align: center;display: block;"
                     t.style = "text-align: center;margin-bottom: -15px;position: relative;display: block;"
                 });
             } catch (error) {
                 console.error('Error:', error);
+                alert('Error:', error);
                 // output.innerHTML = '<p>Error fetching images. Check the console for details.</p>';
             }
         }
 
         function loadPages(title, pageCount, type) {
-            // currentPage = 1; // Reset to page 1 when "Fetch Images" is clicked
             for (let index = 1; index < 20; index++) {
                 setTimeout(async () => {
-                    currentPage = index;
                     await fetchData(index, title, type);
-                    console.log('currentPage:', currentPage, type);
+                    console.log('title, pageCount, type:', title, pageCount, type);
                     if (index == 5) {
                         document.querySelectorAll('.card').forEach(e => e.remove());
                         main.style = 'display:block;';

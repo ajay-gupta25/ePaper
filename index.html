@@ -277,6 +277,25 @@
 
                 const key = `${title}|${i}|${formattedDate}`;
 
+                // If the browser is offline, try load from IDB regardless of cache flags
+                if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                    const blob = await idbGet(key);
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        im.src = url;
+                        im.style = "text-align: center;display: block;";
+                        if (t) t.style = "text-align: center;margin-bottom: -15px;position: relative;display: block;";
+                        return;
+                    } else {
+                        // no cached data for this page — show a small friendly message instead of failing
+                        if (t) {
+                            t.innerText = 'Offline — page not cached';
+                            t.style = 'text-align: center;color:#888;margin-bottom: -15px;display: block;';
+                        }
+                        return;
+                    }
+                }
+
                 // If cache valid, try load from IDB and DO NOT call API when not creating cache
                 if (cacheValid && !shouldCreateCache) {
                     const blob = await idbGet(key);

@@ -73,7 +73,7 @@
                 </font>
             </i>
         </marquee>
-        <img src="https://www.gujaratsamachar.com/assets/footer-logo.png">
+        <img src="https://www.gujaratsamachar.com/assets/footer-logo.png" alt="Gujarat Samachar" style="margin-top: 10px; width: 200px; color: whitesmoke;">
     </div>
     <div id="skeleton"></div>
     <div id="main" style="display:none;"></div>
@@ -83,6 +83,9 @@
     <div id="magazines" style="display:none;">
         <div style="display: flex;justify-content: space-around;"><h3>Magazines</h3><h3 id="magzName" style="text-transform: capitalize;"></h3></div>
     </div>
+
+    <!-- prefetch status indicator -->
+    <div id="prefetchStatus" style="position:fixed;top:70px;right:12px;padding:8px 12px;background:#222;color:#fff;border-radius:6px;display:none;z-index:1000;font-size:13px;"></div>
 
     <script>
          window.onbeforeunload = function () {return "";}
@@ -141,6 +144,120 @@
         }
         setInterval(updateDateTime, 1000);
 
+        // --- IndexedDB image cache ---
+        const IDB_NAME = 'epaper_images_db';
+        const IDB_STORE = 'images';
+        const CACHE_VALID_KEY = 'epaper_cache_valid_until';
+
+        function openDb() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(IDB_NAME, 1);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function idbGet(key) {
+            try {
+                const db = await openDb();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(IDB_STORE, 'readonly');
+                    const store = tx.objectStore(IDB_STORE);
+                    const r = store.get(key);
+                    r.onsuccess = () => resolve(r.result);
+                    r.onerror = () => resolve(undefined);
+                });
+            } catch (e) { return undefined; }
+        }
+
+        async function idbPut(key, value) {
+            try {
+                const db = await openDb();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(IDB_STORE, 'readwrite');
+                    const store = tx.objectStore(IDB_STORE);
+                    const r = store.put(value, key);
+                    r.onsuccess = () => resolve(true);
+                    r.onerror = () => resolve(false);
+                });
+            } catch (e) { return false; }
+        }
+
+        function initCacheWindow() {
+            const now = new Date();
+            const raw = localStorage.getItem(CACHE_VALID_KEY);
+            if (raw) {
+                const validUntil = parseInt(raw, 10);
+                if (!isNaN(validUntil) && now.getTime() < validUntil) {
+                    console.log('Using existing IDB cache until', new Date(validUntil));
+                    return { cacheValid: true, shouldCreateCache: false };
+                }
+            }
+            // no valid cache
+            if (now.getHours() >= 8) {
+                const next = new Date(now);
+                next.setDate(now.getDate() + 1);
+                next.setHours(8,0,0,0);
+                localStorage.setItem(CACHE_VALID_KEY, String(next.getTime()));
+                console.log('Created new cache window until', next);
+                return { cacheValid: true, shouldCreateCache: true };
+            }
+            return { cacheValid: false, shouldCreateCache: false };
+        }
+
+        let cacheState = initCacheWindow();
+        let cacheValid = cacheState.cacheValid;
+        let shouldCreateCache = cacheState.shouldCreateCache;
+
+        // prefetch into IDB: fetch API for image URLs then blobs
+        async function prefetchIntoIDB(types, maxPages=20) {
+            if (!navigator.onLine) return;
+            const statusEl = document.getElementById('prefetchStatus');
+            if (statusEl) { statusEl.style.display='block'; statusEl.innerText='Prefetching...'; }
+            let total = 0; types.forEach(t=> total += (t.pageCount||10));
+            let done = 0;
+            for (const entry of types) {
+                const { title, pageCount } = entry;
+                for (let i=1;i<=Math.min(maxPages, pageCount||10); i++) {
+                    const key = `${title}|${i}|${formattedDate}`;
+                    try {
+                        // call backend to get image URLs
+                        const url = `https://epaper-3q7v.onrender.com/fetch-images?title=${encodeURIComponent(title)}&date=${encodeURIComponent(formattedDate)}&number=${encodeURIComponent(i)}`;
+                        const resp = await fetch(url);
+                        if (!resp.ok) { done++; if (statusEl) statusEl.innerText=`Prefetch ${done}/${total}`; await new Promise(r=>setTimeout(r,120)); continue; }
+                        const imgs = await resp.json();
+                        if (!Array.isArray(imgs) || imgs.length===0) { done++; if (statusEl) statusEl.innerText=`Prefetch ${done}/${total}`; await new Promise(r=>setTimeout(r,120)); continue; }
+                        // fetch first image blob
+                        try {
+                            const imgResp = await fetch(imgs[0]);
+                            if (imgResp.ok) {
+                                const blob = await imgResp.blob();
+                                await idbPut(key, blob);
+                            }
+                        } catch(e) { /* ignore image fetch */ }
+                    } catch(e) { /* ignore page */ }
+                    done++; if (statusEl) statusEl.innerText=`Prefetch ${done}/${total}`;
+                    await new Promise(r=>setTimeout(r,150));
+                }
+            }
+            if (statusEl) { statusEl.innerText='Prefetch complete'; setTimeout(()=>statusEl.style.display='none',1200); }
+            // after prefetching, we no longer need to create cache in this session
+            shouldCreateCache = false;
+        }
+
+        // trigger prefetch on cache creation
+        (async function(){
+            if (shouldCreateCache && navigator.onLine) {
+                const work = [ { title: 'ahmedabad', pageCount: 20 }, { title: 'kheda-anand', pageCount: 10 } ];
+                if (magazinesList[day]) work.push({ title: magazinesList[day], pageCount: 10 });
+                prefetchIntoIDB(work, 20).catch(e=>console.warn(e));
+            }
+        })();
+
         onloadScript();
         async function onloadScript() {
             await loadPages('ahmedabad', 20, 'main');
@@ -155,38 +272,55 @@
             try {
                 var im = document.getElementById(type+'Img-'+i);
                 var t = document.getElementById(type+'Text-'+i);
-                im.style = "display: none;"
-                t.style = "display: none;"
-                // Construct the URL with the query parameters
-                // const url = `http://localhost:3000/fetch-images?title=${encodeURIComponent(title)}&date=${encodeURIComponent(formattedDate)}&number=${encodeURIComponent(i)}`;
-                const url = `https://epaper-3q7v.onrender.com/fetch-images?title=${encodeURIComponent(title)}&date=${encodeURIComponent(formattedDate)}&number=${encodeURIComponent(i)}`;
+                if (im) im.style = "display: none;"
+                if (t) t.style = "display: none;"
 
-                // Make a request to the backend
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch images. Status: ${response.status}`);
+                const key = `${title}|${i}|${formattedDate}`;
+
+                // If cache valid, try load from IDB and DO NOT call API when not creating cache
+                if (cacheValid && !shouldCreateCache) {
+                    const blob = await idbGet(key);
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        im.src = url;
+                        im.style = "text-align: center;display: block;";
+                        if (t) t.style = "text-align: center;margin-bottom: -15px;position: relative;display: block;";
+                        return;
+                    } else {
+                        // missing in cache: per requirement do not call network
+                        return;
+                    }
                 }
 
-                // Parse JSON response
+                // Otherwise (no cache or creating cache) call API, fetch image and store if needed
+                const apiUrl = `https://epaper-3q7v.onrender.com/fetch-images?title=${encodeURIComponent(title)}&date=${encodeURIComponent(formattedDate)}&number=${encodeURIComponent(i)}`;
+                const response = await fetch(apiUrl);
+                if (!response.ok) return;
                 const images = await response.json();
-                console.log('Server response:', images);
+                if (!Array.isArray(images) || images.length===0) return;
 
-                // Check if there are images in the response
-                if (!Array.isArray(images) || images.length === 0) {
-                    // output.innerHTML = '<p>No images found.</p>';
-                    return;
-                }
+                // fetch first image blob
+                try {
+                    const imgResp = await fetch(images[0]);
+                    if (imgResp.ok) {
+                        const blob = await imgResp.blob();
+                        // set image using blob
+                        const url = URL.createObjectURL(blob);
+                        im.src = url;
+                        im.style = "text-align: center;display: block;";
+                        if (t) t.style = "text-align: center;margin-bottom: -15px;position: relative;display: block;";
+                        if (shouldCreateCache) await idbPut(key, blob);
+                        return;
+                    }
+                } catch(e) { /* ignore image fetch error */ }
 
-                // Dynamically create image elements and append them
-                images.forEach((imgSrc) => {
-                    im.src = imgSrc;
-                    im.style = "text-align: center;display: block;"
-                    t.style = "text-align: center;margin-bottom: -15px;position: relative;display: block;"
-                });
+                // fallback: try using the returned URL directly
+                im.src = images[0];
+                im.style = "text-align: center;display: block;";
+                if (t) t.style = "text-align: center;margin-bottom: -15px;position: relative;display: block;";
+
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error:', error);
-                // output.innerHTML = '<p>Error fetching images. Check the console for details.</p>';
             }
         }
 

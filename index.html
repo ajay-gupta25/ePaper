@@ -88,7 +88,21 @@
     <div id="prefetchStatus" style="position:fixed;top:70px;right:12px;padding:8px 12px;background:#222;color:#fff;border-radius:6px;display:none;z-index:1000;font-size:13px;"></div>
 
     <script>
-         window.onbeforeunload = function () {return "";}
+      // register service worker for offline app-shell caching
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js').then(reg => {
+          console.log('Service Worker registered', reg);
+          // optional: show SW status
+          const s = document.createElement('div');
+          s.id = 'swStatus';
+          s.style = 'position:fixed;bottom:12px;left:12px;background:#111;color:#fff;padding:6px 8px;border-radius:6px;font-size:12px;z-index:9999;';
+          s.innerText = 'SW: registered';
+          document.body.appendChild(s);
+        }).catch(err => {
+          console.warn('SW register failed', err);
+        });
+      }
+        window.onbeforeunload = function () {return "";}
         const skeleton = document.getElementById('skeleton');
         for (let index = 1; index < 20; index++) {
             skeleton.innerHTML += '<div class="card"><div class="card-image"><div id="image" class="skeleton-loader"></div></div></div>';
